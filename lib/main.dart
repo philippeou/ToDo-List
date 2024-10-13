@@ -41,56 +41,62 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _chargerCategories(); // Charger les catégories lors de l'initialisation
+    _chargerCategories();
   }
 
   Future<void> _chargerCategories() async {
     final categories = await DB().getCategories();
     setState(() {
-    _categories = categories;
+      _categories = categories;
     });
-    print('Catégories chargées : ');
   }
 
-  // Ajouter une nouvelle catégorie
+  Future<int> _getNombreDeTaches(int idCategorie) async {
+    int nombreDeTaches = await DB().countTachesParCategorie(idCategorie);
+    print("Nombre de tâches pour la catégorie $idCategorie: $nombreDeTaches");
+    return nombreDeTaches;
+  }
+
   void _ajouterCategorie() {
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => PageAjoutCategorie(onSave: _chargerCategories), // Recharger après ajout
-    ),
+        builder: (context) =>
+            PageAjoutCategorie(
+                onSave: _chargerCategories), // Recharger après ajout
+      ),
     );
   }
 
-  // Modifier une catégorie existante
   void _modifierCategorie(Categorie categorie) {
-  Navigator.push(
-  context,
-  MaterialPageRoute(
-  builder: (context) => PageAjoutCategorie(categorie: categorie, onSave: _chargerCategories),
-  ),
-  );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            PageAjoutCategorie(
+                categorie: categorie, onSave: _chargerCategories),
+      ),
+    );
   }
 
-  // Supprimer une catégorie
   void _supprimerCategorie(int id) async {
-  await DB().deleteCategorie(id);
-  _chargerCategories();  // Recharger après suppression
+    await DB().deleteCategorie(id);
+    _chargerCategories();
   }
 
-  // Ouvrir la page des tâches pour une catégorie
   void _ouvrirListeTaches(int idCategorie) {
-  Navigator.push(
-  context,
-  MaterialPageRoute(builder: (context) => PageListeTaches(idCategorie: idCategorie)),
-  );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) => PageListeTaches(idCategorie: idCategorie)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Liste des Catégories'),
+        title: Text('TODO List'),
       ),
       body: _categories.isEmpty
           ? Center(child: Text('Aucune catégorie pour le moment'))
@@ -98,24 +104,47 @@ class _MyHomePageState extends State<MyHomePage> {
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final categorie = _categories[index];
-          return ListTile(
-            title: Text(categorie.nom),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.edit),
-                  onPressed: () => _modifierCategorie(categorie),
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () => _supprimerCategorie(categorie.id!),
-                ),
-              ],
-            ),
-            onTap: () => _ouvrirListeTaches(categorie.id!),
+          return FutureBuilder<int>(
+            future: _getNombreDeTaches(categorie.id!), // Assurez-vous que cet ID est correct
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return ListTile(
+                  title: Text(categorie.nom),
+                  subtitle: Text('Chargement...'),
+                );
+              } else if (snapshot.hasError) {
+                return ListTile(
+                  title: Text(categorie.nom),
+                  subtitle: Text('Erreur lors du chargement des tâches'),
+                );
+              } else {
+                final nombreDeTaches = snapshot.data ?? 0;
+                print("Compteur pour ${categorie.nom}: $nombreDeTaches"); // Debug
+                return Card(
+                  elevation: 2,
+                  child: ListTile(
+                    title: Text(categorie.nom),
+                    subtitle: Text('$nombreDeTaches tâche(s)'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () => _modifierCategorie(categorie),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _supprimerCategorie(categorie.id!),
+                        ),
+                      ],
+                    ),
+                    onTap: () => _ouvrirListeTaches(categorie.id!),
+                  ),
+                );
+              }
+            },
           );
-          },
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _ajouterCategorie,

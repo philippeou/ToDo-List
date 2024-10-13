@@ -15,6 +15,14 @@ class DB {
 
   DB._interne();
 
+  Future<int> countTachesParCategorie(int idCategorie) async {
+    final db = await baseDeDonnees;
+    var result = await db.rawQuery('SELECT COUNT(*) FROM taches WHERE idCategorie = ?', [idCategorie]);
+    int count = Sqflite.firstIntValue(result) ?? 0;
+    print("Nombre de tâches pour la catégorie $idCategorie: $count");
+    return count;
+  }
+
   Future<Database> get baseDeDonnees async {
     if (_baseDeDonnees != null) return _baseDeDonnees!;
     _baseDeDonnees = await _initDb();
@@ -27,8 +35,10 @@ class DB {
       chemin,
       version: 1,
       onCreate: (db, version) {
-        db.execute('CREATE TABLE catégories(id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT)');
-        db.execute('CREATE TABLE taches(id INTEGER PRIMARY KEY AUTOINCREMENT,'' idCategorie INTEGER, titre TEXT, estComplete INTEGER)');
+        db.execute('CREATE TABLE catégories(id INTEGER PRIMARY KEY AUTOINCREMENT,'
+            ' nom TEXT)');
+        db.execute('CREATE TABLE taches(id INTEGER PRIMARY KEY AUTOINCREMENT,'
+            ' idCategorie INTEGER, titre TEXT, estComplete INTEGER)');
         },
     );
   }
@@ -41,7 +51,7 @@ class DB {
   Future<List<Categorie>> getCategories() async {
     final db = await baseDeDonnees;
     final List<Map<String, dynamic>> maps = await db.query('catégories');
-    print('Données de la base : $maps'); // Debug
+    print('Données de la base : $maps');
     return List.generate(maps.length, (i) {
       return Categorie.fromMap(maps[i]);
     });
@@ -79,4 +89,5 @@ class DB {
     final db = await baseDeDonnees;
     return await db.delete('taches', where: 'id = ?', whereArgs: [id]);
   }
+
 }

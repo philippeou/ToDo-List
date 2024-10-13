@@ -27,7 +27,6 @@ class _PageAjoutCategorieState extends State<PageAjoutCategorie> {
 
   void _enregistrerCategorie() async {
     if (_nomController.text.isEmpty) {
-      // Afficher un message d'erreur si le champ est vide
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text('Le nom de la catégorie ne peut pas être vide')),
   );
@@ -35,15 +34,12 @@ class _PageAjoutCategorieState extends State<PageAjoutCategorie> {
     }
 
     try {
-      // Attendre que l'insertion ou la mise à jour soit terminée
       if (widget.categorie == null) {
-        // Ajouter une nouvelle catégorie
         await DB().insertCategorie(Categorie(nom: _nomController.text));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Catégorie ajoutée avec succès !')),
         );
       } else {
-        // Mettre à jour une catégorie existante
         await DB().updateCategorie(
           Categorie(id: widget.categorie!.id, nom: _nomController.text),
         );
